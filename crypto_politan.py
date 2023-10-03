@@ -76,26 +76,18 @@ def record_article_by_feed(interval):
 def record_article_by_link(link, insertMode=True):
     while True:
         try:
-            print("testing...1. ", link)
             article = {}
             response = requests.get(link, headers={
                 "User-Agent": "PostmanRuntime/7.28.4",
             })
-            print("testing...2")
             from lxml import html
-            print("testing...3")
             tree = html.fromstring(response.text)
-            print("testing...4: ", tree)
             title = tree.xpath(
                 "/html/body/div[1]/div/div/main/div/div[1]/article/div[2]/header/h1")[0].text_content().strip()
-            print("testing...5 ", title)
             content = tree.xpath(
                 "/html/body/div[1]/div/div/main/div/div[1]/article/div[2]/div[3]/div[2]")[0].text_content().strip()
             
             # content = content.split("Read more")[1]
-            print("content captured....")
-            print(content)
-            print("%"*100)
             if not insertMode:
                 return content
             content = sa.summarize_large_text(content)

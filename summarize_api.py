@@ -139,8 +139,11 @@ def load_all_categories():
     categories = c.fetchall()
     for each in categories:
         for one in each:
-            for cat in one.split(", "):
-                cat_dic[cat] = 1
+            if "Industry News" in one:
+                cat_dic[one] = 1
+            else:
+                for cat in one.split(", "):
+                    cat_dic[cat] = 1
     cat_list = list(cat_dic.keys())
     cat_list.sort()
     close_db_connection()

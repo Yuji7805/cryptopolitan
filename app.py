@@ -60,12 +60,10 @@ def get_article_contents_by_links(article_links):
         print("article link: ", link)
         time = str(sa.get_time_by_link(link)[0])
         content = sa.get_content_by_link(link)[0]
-        # print("=======> ", content)
         contents.append(time + ':\n')
         contents.append(content)
 
     print("raw content captured!")
-    print(contents)
     return "\n".join(contents)
 
 

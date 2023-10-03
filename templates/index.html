@@ -291,7 +291,36 @@
         </div>
       </div>
     </div>
-    <script> 
+    <script>      
+      var test_selectElement = document.getElementById("test_category_list");
+      var test_options = test_selectElement.getElementsByTagName("option");      
+
+      // load categories      
+      $.ajax({
+        url: "/api/v1/get-category",
+        type: "GET",
+        success: function (response) {
+          categories = response["category"];
+          for (var i = 0; i < test_options.length; i++) {
+            var test_option = test_options[i];
+            var test_optionText = test_option.textContent.trim();
+            if (categories.includes(test_optionText)){
+              test_option.disabled = false;
+            } else{
+              test_option.disabled = true;
+            }
+            if(i == 9){
+              if (categories.includes("Industry News, Gaming")){
+                test_option.disabled = false;
+              } else{
+                test_option.disabled = true;
+              } 
+            }
+          }     
+        }
+      });
+      
+
       // links to summarize with customized prompt
       var test_links = "";
       
@@ -337,7 +366,6 @@
             period: hour
           }
         }
-        console.log(requestData);
         // get matching articles' count
         $.ajax({
           url: "/api/v1/article-num",
@@ -412,7 +440,7 @@
             console.error("Error summarzing articles", error);
           }
         });        
-      } 
+      }
 
       // Testing prompt
       var test_rangeInput = document.getElementById("test_input_hour");
@@ -427,7 +455,6 @@
         var parentLabel = selectedOption.parentNode.label;
         var fullPath = parentLabel ? parentLabel + '>' + selectedOption.value : selectedOption.value;        
         test_selectedCategory = fullPath;
-        console.log(fullPath);
       });
 
       function getMatchingArticleLinks(){
@@ -453,7 +480,6 @@
             period: hour
           }
         }
-        console.log(requestData);
 
         $.ajax({
           url: "/api/v1/article-num",
@@ -542,13 +568,10 @@
         test_content.appendChild(busy);
 
         test_prompt_input = document.getElementById("prompt-input");
-        console.log(test_prompt_input.value)
-        console.log(test_links)
         requestData = {
           prompt: test_prompt_input.value,
           links: test_links
         }
-        console.log(requestData);
         $.ajax({
           url: "/api/v1/summarize-by-links",
           type: "POST",
@@ -556,7 +579,6 @@
           data: JSON.stringify(requestData),
           success: function (response) {
             summary_result = response["summary"];
-            console.log(summary_result);            
             test_content.innerHTML = "";
             test_result = document.createElement("p");
             test_result.textContent = summary_result;
