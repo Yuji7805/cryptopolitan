@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Add to DB</title>
+    <style>
+      .article_info {
+        display: flex;
+        padding: 5px;
+        font-size: x-large;
+      }
+      .property {
+        width: 240px;
+        min-width: 240px;
+      }
+      .input {
+        min-width: 330px;
+        width: -webkit-fill-available;
+        font-size: medium;
+      }
+      .article {
+        width: 60%;
+        margin-left: 20%;
+        margin-right: 20%;
+        margin-top: 24px;
+        margin-bottom: 24px;
+        border-radius: 10px;
+        min-width: 720px;
+        border: solid;
+        padding: 35px;
+        font-size: xx-large;
+      }
+      .btn {
+        margin-left: 15px;
+        min-width: 100px;
+        padding-top: 7px;
+        padding-bottom: 7px;
+        padding-left: 15px;
+        padding-right: 15px;
+      }
+      .title,
+      .action {
+        text-align: center;
+        margin-bottom: 12px;
+      }
+      #test-prompt {
+        width: auto;
+        margin: 5%;
+      }
+      .split {
+        display: flex;
+        flex-direction: row;
+      }
+      .article_testing {
+        width: 50%;
+        height: 100%;
+      }
+      #prompt-origin::after {
+        content: "";
+        background-color: #000;
+        position: absolute;
+        width: 5px;
+        height: 100px;
+        top: 10px;
+        left: 50%;
+        display: block;
+      }
+      .split {
+        border: dashed;
+        border-width: thin;
+      }
+      #prompt-input {
+        height: 300px;
+        width: 90%;
+        margin-left: 5%;
+        display: none;
+        margin-top: 40px;
+        font-size: 30px;
+      }
+      #test-summarize {
+        display: none;
+        font-size: 30px;
+        height: 56px;
+        align-items: center;
+        justify-content: center;
+        margin-left: 5%;
+        margin-top: 10px;
+      }
+      select#test_category_list {
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        width: 300px;
+        padding: 5px;
+      }
+
+      optgroup[label] {
+        font-weight: bold;
+      }
+
+      optgroup[label]:not(:first-of-type) {
+        margin-top: 10px;
+      }
+
+      option {
+        padding-left: 10px;
+      }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  </head>
+  <body>    
+    <div class="article" id="summarize article">
+      <div class="title">Make Summary</div>
+      <div class="container">
+        <div>
+          <div class="article_info">
+            <label class="property">Category:</label>
+            <select id="category_list">
+              <optgroup label="AI">
+                <option>AI in Daily Life</option>
+                <option>Explained</option>
+                <option>Hidden Gems</option>
+                <option>Innovators</option>
+                <option>Trending News</option>
+              </optgroup>
+              <option>Bitcoin News</option>
+              <optgroup label="Gaming">
+                <option>Crypto gaming</option>
+                <option>eSports & Tournaments</option>
+                <option>Gaming Hardware</option>
+                <option>Industry News</option>
+                <option>Reviews</option>
+              </optgroup>
+              <option>Investing</option>
+              <option>Latest News</option>
+              <optgroup label="News">
+                <option>Altcoin News</option>
+                <option>Binance News</option>
+                <option>Bitcoin Cash News</option>
+                <option>Bitcoin News</option>
+                <option>Blockchain News</option>
+                <option>Cardano News</option>
+                <option>ChainLink News</option>
+                <option>Cyber Security News</option>
+                <option>DeFi News</option>
+                <option>Dogecoin News</option>
+                <option>EOS News</option>
+                <option>ETFs</option>
+                <option>Ethereum News</option>
+                <option>Exchange News</option>
+                <option>Industry News</option>
+                <option>Litecoin News</option>
+                <option>Monero News</option>
+                <option>NFT News</option>
+                <option>Polkadot News</option>
+                <option>Regulation News</option>
+                <option>Research News</option>
+                <option>Ripple News</option>
+                <option>Scam News</option>
+                <option>Token Sale</option>
+                <option>Tron News</option>
+              </optgroup>
+              <option>Price Prediction</option>
+              <option>Regulations</option>
+              <optgroup label="Technology">
+                <option>Blockchain Gaming</option>
+                <option>Metaverse</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="article_info">
+            <label class="property">Hours:</label>
+            <input
+              type="range"
+              min="1"
+              max="168"
+              value="1"
+              class="input"
+              id="input_hour"
+            />
+            <label for="myRange" id="rangeValue">1</label>
+          </div>
+        </div>
+        <div class="action">
+          <button onclick="getMatchingArticleCnt()" class="btn" id="makeSummary">
+            Find Articles
+          </button>
+        </div>
+      </div>
+      <div id="summarized_article"></div>
+    </div>
+    <script>    
+      var rangeInput = document.getElementById("input_hour");
+      var rangeValueLabel = document.getElementById("rangeValue");
+      rangeInput.addEventListener("input", function () {
+        rangeValueLabel.textContent = rangeInput.value;
+      });
+
+      var makeSummary = document.getElementById("makeSummary")
+
+      // disable buttons till busy gif loaded
+      makeSummary.disabled = true;
+      
+      // load busy gif and enable makeSummary button
+      busy = document.createElement("img");
+      busy.src = "https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif";
+      busy.onload = function() {
+        makeSummary.disabled = false;        
+      }
+      
+      var selectedCategory = "AI>AI in Daily Life";
+      document.getElementById('category_list').addEventListener('change', function() {
+        var selectedOption = this.options[this.selectedIndex];
+        var parentLabel = selectedOption.parentNode.label;
+        var fullPath = parentLabel ? parentLabel + '>' + selectedOption.value : selectedOption.value;        
+        selectedCategory = fullPath;
+      });
+
+      function getMatchingArticleCnt(){
+        var category = document.getElementById("category_list").value;
+        var hour = document.getElementById("input_hour").value;
+
+        // requests data that implements current state (category, hour)
+        var requestData = {
+          category: category,
+          period: hour
+        };
+
+        if(category.includes("Industry News")){
+          requestData = {
+            category: selectedCategory,
+            period: hour
+          }
+        }
+        console.log(requestData);
+        // get matching articles' count
+        $.ajax({
+          url: "/api/v1/article-num",
+          type: "POST",
+          contentType: "application/json",
+          data: JSON.stringify(requestData),
+          success: function (response) {
+            sum_art = document.getElementById("summarized_article");
+            if (parseInt(response["article num"]) > 0) {
+              sum_art.textContent =
+              response["article num"] + " articles matched.";
+              sum_art.style.display = "flex";
+              
+              sum_art.style.flexDirection = "column";
+              sum_art.style.alignItems = "center";              
+
+              btn_summarize = document.createElement("button");
+              btn_summarize.innerHTML = "Summarize";
+                            
+              // Add style to the button
+              btn_summarize.style.marginLeft = "15px";
+              btn_summarize.style.minWidth = "100px";
+              btn_summarize.style.paddingTop = "7px";
+              btn_summarize.style.paddingBottom = "7px";
+              btn_summarize.style.paddingLeft = "15px";
+              btn_summarize.style.paddingRight = "15px";
+              btn_summarize.style.marginTop = "12px";
+
+              btn_summarize.onclick = function() {
+                this.remove();
+                busy.style.height = "200px";
+                busy.style.width = "200px";
+                document.getElementById("summarized_article").appendChild(busy);
+                $.ajax({
+                  url: "/api/v1/summarize-articles",
+                  type: "POST",
+                  contentType: "application/json",
+                  data: JSON.stringify(requestData),
+                  success: function (response) {
+                    document.getElementById("summarized_article").textContent =
+                      response["summary"];
+                    links_div = document.createElement("div");
+                    links_div.style.display = "flex";
+                    links_div.style.flexDirection = "column";
+                    links_div.style.justifyContent = "center";
+                    links_div.style.marginTop = "55px";
+                    links_div.textContent = "Related URLS";
+                    links = response["link"].split(", ");
+                    links.forEach(function (link) {
+                      var link_url = document.createElement("a");
+                      link_url.href = link;
+                      link_url.textContent = link;
+                      link_url.style.marginTop = "15px";
+                      links_div.appendChild(link_url);
+                    });
+                    document
+                      .getElementById("summarized_article")
+                      .appendChild(links_div);
+                  },
+                  error: function (error) {
+                    console.error("Error summarzing articles", error);
+                  }
+                });
+              };
+              document.getElementById("summarized_article").appendChild(btn_summarize);
+            }
+            else{
+              sum_art.textContent = "No matching articles."
+            }
+          },
+          error: function (error) {
+            console.error("Error summarzing articles", error);
+          }
+        });        
+      } 
+    </script>
+  </body>
+</html>
