@@ -213,7 +213,7 @@ def load_articles(currency, category, period=0, start_date="1900-01-01 00:00:00"
 def summarize_articles(articles, prompt):
     contents = ''
     for article in articles:
-        contents += article[2] + "\n" + article[6]
+        contents += article[2] + "\n" + article[7]
     return summarize_large_text(contents, prompt)
 
 
