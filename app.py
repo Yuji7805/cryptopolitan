@@ -17,11 +17,12 @@ def summarize_recent_articles(period, category, currency):
                 "crypto", category, period=period)
             links = []
             for each in articles:
-                links.append(each[7])
+                print(each)
+                links.append(each[8])
             if len(articles) == 0:
                 return "No matching content", " "
             if len(articles) == 1:
-                return articles[0][6], ', '.join(links)
+                return articles[0][7], ', '.join(links)
             print("#" * 150)
             summary = sa.summarize_articles(articles, prompt2)
             links = ', '.join(links)
