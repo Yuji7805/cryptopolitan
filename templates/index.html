@@ -295,6 +295,8 @@
       var test_selectElement = document.getElementById("test_category_list");
       var test_options = test_selectElement.getElementsByTagName("option");      
 
+      var selectElement = document.getElementById("category_list");
+      var options = selectElement.getElementsByTagName("option");   
       // load categories      
       $.ajax({
         url: "/api/v1/get-category",
@@ -316,7 +318,23 @@
                 test_option.disabled = true;
               } 
             }
-          }     
+          }
+          for (var i = 0; i < options.length; i++) {
+            var option = options[i];
+            var optionText = option.textContent.trim();
+            if (categories.includes(optionText)){
+              option.disabled = false;
+            } else{
+              option.disabled = true;
+            }
+            if(i == 9){
+              if (categories.includes("Industry News, Gaming")){
+                option.disabled = false;
+              } else{
+                option.disabled = true;
+              } 
+            }
+          } 
         }
       });
       
