@@ -6,7 +6,8 @@ import time
 import os
 
 PROMPT = os.getenv("PROMPT")
-prompt2 = PROMPT
+# prompt2 = PROMPT
+prompt2 = os.getenv("PROMPT_")
 
 
 def summarize_recent_articles(period, category, currency):
@@ -17,7 +18,6 @@ def summarize_recent_articles(period, category, currency):
                 "crypto", category, period=period)
             links = []
             for each in articles:
-                print(each)
                 links.append(each[8])
             if len(articles) == 0:
                 return "No matching content", " "
@@ -58,11 +58,14 @@ def get_article_contents_by_links(article_links):
     contents = []
     for link in article_links:
         print("article link: ", link)
-        content = cp.record_article_by_link(link, insertMode=False)
-        print("=======> ", content)
+        time = str(sa.get_time_by_link(link)[0])
+        content = sa.get_content_by_link(link)[0]
+        # print("=======> ", content)
+        contents.append(time + ':\n')
         contents.append(content)
 
     print("raw content captured!")
+    print(contents)
     return "\n".join(contents)
 
 
@@ -151,19 +154,19 @@ def get_prompt():
     return response
 
 
-# @app.route("/api/v1/summarize-by-links", methods=["POST", "Options"])
-# def summzrize_by_links():
-#     req_json = request.json
-#     prompt = req_json['prompt']
-#     links = req_json['links'].split(', ')
-#     print("summarizing from raw article...")
-#     summary = sa.summarize_large_text(
-#         get_article_contents_by_links(links), prompt)
-#     print("@"*111)
-#     print(summary)
-#     print("@"*111)
-#     response = make_response(jsonify({"summary": summary}))
-#     return response
+@app.route("/api/v1/summarize-by-links", methods=["POST", "Options"])
+def summzrize_by_links():
+    req_json = request.json
+    prompt = req_json['prompt']
+    links = req_json['links'].split(', ')
+    print("summarizing from raw article...")
+    summary = sa.summarize_large_text(
+        get_article_contents_by_links(links), prompt)
+    print("@"*111)
+    print(summary)
+    print("@"*111)
+    response = make_response(jsonify({"summary": summary}))
+    return response
 
 
 @app.route("/")

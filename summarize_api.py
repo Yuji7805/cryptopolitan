@@ -217,5 +217,28 @@ def summarize_articles(articles, prompt):
     return summarize_large_text(contents, prompt)
 
 
+def get_content_by_link(link):
+    connect_db()
+    c.execute("SELECT content FROM articles WHERE link=?", (link,))
+    content = c.fetchone()
+    close_db_connection()
+    return content
+
+
+def get_summary_by_link(link):
+    connect_db()
+    c.execute("SELECT summary FROM articles WHERE link=?", (link,))
+    summary = c.fetchone()
+    close_db_connection()
+    return summary
+
+def get_time_by_link(link):
+    connect_db()
+    c.execute("SELECT publish_date FROM articles WHERE link=?", (link,))
+    publish_date = c.fetchone()
+    close_db_connection()
+    return publish_date
+
+
 def close_db_connection():
     conn.close()

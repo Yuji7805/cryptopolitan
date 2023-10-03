@@ -187,7 +187,114 @@
       </div>
       <div id="summarized_article"></div>
     </div>
-    <script>    
+    <div class="article" id="test-prompt">
+      <div class="title">Test Prompt</div>
+      <div class="container">
+        <div>
+          <div class="article_info">
+            <label class="property">Category:</label>
+            <select id="test_category_list">
+              <optgroup label="AI">
+                <option>AI in Daily Life</option>
+                <option>Explained</option>
+                <option>Hidden Gems</option>
+                <option>Innovators</option>
+                <option>Trending News</option>
+              </optgroup>
+              <option>Bitcoin News</option>
+              <optgroup label="Gaming">
+                <option>Crypto gaming</option>
+                <option>eSports & Tournaments</option>
+                <option>Gaming Hardware</option>
+                <option>Industry News</option>
+                <option>Reviews</option>
+              </optgroup>
+              <option>Investing</option>
+              <option>Latest News</option>
+              <optgroup label="News">
+                <option>Altcoin News</option>
+                <option>Binance News</option>
+                <option>Bitcoin Cash News</option>
+                <option>Bitcoin News</option>
+                <option>Blockchain News</option>
+                <option>Cardano News</option>
+                <option>ChainLink News</option>
+                <option>Cyber Security News</option>
+                <option>DeFi News</option>
+                <option>Dogecoin News</option>
+                <option>EOS News</option>
+                <option>ETFs</option>
+                <option>Ethereum News</option>
+                <option>Exchange News</option>
+                <option>Industry News</option>
+                <option>Litecoin News</option>
+                <option>Monero News</option>
+                <option>NFT News</option>
+                <option>Polkadot News</option>
+                <option>Regulation News</option>
+                <option>Research News</option>
+                <option>Ripple News</option>
+                <option>Scam News</option>
+                <option>Token Sale</option>
+                <option>Tron News</option>
+              </optgroup>
+              <option>Price Prediction</option>
+              <option>Regulations</option>
+              <optgroup label="Technology">
+                <option>Blockchain Gaming</option>
+                <option>Metaverse</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="article_info">
+            <label class="property">Hours:</label>
+            <input
+              type="range"
+              min="1"
+              max="168"
+              value="1"
+              class="input"
+              id="test_input_hour"
+            />
+            <label for="test_myRange" id="test_rangeValue">1</label>
+          </div>
+        </div>
+        <div class="action">
+          <button
+            onclick="getMatchingArticleLinks()"
+            class="btn"
+            id="test_summary_btn"
+          >
+            Get artice Links
+          </button>
+        </div>
+      </div>
+      <div id="test-selected-links"></div>
+      <div class="split" id="split">
+        <div class="article_testing" id="prompt_origin">
+          <div class="title">
+            Origin
+            <div id="origin-content"></div>
+          </div>
+        </div>
+        <div class="article_testing" id="prompt_test">
+          <div class="title">
+            Test
+            <div>
+              <textarea id="prompt-input"> </textarea>
+              <button id="test-summarize" onclick="Summarize_links()">
+                Summarize (Test Prompt)
+              </button>
+            </div>
+            <div id="test-content"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script> 
+      // links to summarize with customized prompt
+      var test_links = "";
+      
       var rangeInput = document.getElementById("input_hour");
       var rangeValueLabel = document.getElementById("rangeValue");
       rangeInput.addEventListener("input", function () {
@@ -278,7 +385,7 @@
                     links_div.style.justifyContent = "center";
                     links_div.style.marginTop = "55px";
                     links_div.textContent = "Related URLS";
-                    links = response["link"].split(", ");
+                    links = response["link"].split(", ");                    
                     links.forEach(function (link) {
                       var link_url = document.createElement("a");
                       link_url.href = link;
@@ -306,6 +413,161 @@
           }
         });        
       } 
+
+      // Testing prompt
+      var test_rangeInput = document.getElementById("test_input_hour");
+      var test_rangeValueLabel = document.getElementById("test_rangeValue");
+      test_rangeInput.addEventListener("input", function () {
+        test_rangeValueLabel.textContent = test_rangeInput.value;
+      });
+
+      var test_selectedCategory = "AI>AI in Daily Life";
+      document.getElementById('test_category_list').addEventListener('change', function() {
+        var selectedOption = this.options[this.selectedIndex];
+        var parentLabel = selectedOption.parentNode.label;
+        var fullPath = parentLabel ? parentLabel + '>' + selectedOption.value : selectedOption.value;        
+        test_selectedCategory = fullPath;
+        console.log(fullPath);
+      });
+
+      function getMatchingArticleLinks(){
+        prompt_input = document.getElementById("prompt-input");
+        prompt_input.value = "";
+        prompt_input.style.display = "none";
+        test_content = document.getElementById("test-content");
+        test_content.innerHTML = "";
+        
+        test_summarize = document.getElementById("test-summarize");
+        test_summarize.style.display = "none";
+
+        var test_category = document.getElementById("test_category_list").value;
+        var hour = document.getElementById("test_input_hour").value;
+        var requestData = {
+          category: test_category,
+          period: hour
+        };
+        
+        if(test_category.includes("Industry News")){
+          requestData = {
+            category: test_selectedCategory,
+            period: hour
+          }
+        }
+        console.log(requestData);
+
+        $.ajax({
+          url: "/api/v1/article-num",
+          type: "POST",
+          contentType: "application/json",
+          data: JSON.stringify(requestData),
+          success: function (response) {
+            ori_content = document.getElementById("origin-content");
+            if (parseInt(response["article num"]) > 0) {
+              ori_content.textContent =
+              response["article num"] + " articles matched.";
+              ori_content.style.display = "flex";
+              
+              ori_content.style.flexDirection = "column";
+              ori_content.style.alignItems = "center";              
+
+              btn_summarize = document.createElement("button");
+              btn_summarize.innerHTML = "Summarize";
+                            
+              // Add style to the button
+              btn_summarize.style.marginLeft = "15px";
+              btn_summarize.style.minWidth = "100px";
+              btn_summarize.style.paddingTop = "7px";
+              btn_summarize.style.paddingBottom = "7px";
+              btn_summarize.style.paddingLeft = "15px";
+              btn_summarize.style.paddingRight = "15px";
+              btn_summarize.style.marginTop = "12px";
+
+              btn_summarize.onclick = function() {
+                this.remove();
+                busy.style.height = "200px";
+                busy.style.width = "200px";
+                document.getElementById("origin-content").appendChild(busy);
+                $.ajax({
+                  url: "/api/v1/summarize-articles",
+                  type: "POST",
+                  contentType: "application/json",
+                  data: JSON.stringify(requestData),
+                  success: function (response) {
+                    document.getElementById("origin-content").textContent =
+                      response["summary"];
+                    links_div = document.createElement("div");
+                    links_div.style.display = "flex";
+                    links_div.style.flexDirection = "column";
+                    links_div.style.justifyContent = "center";
+                    links_div.style.marginTop = "55px";
+                    links_div.textContent = "Related URLS";
+                    links = response["link"].split(", ");                    
+                    test_links = response["link"];
+                    links.forEach(function (link) {
+                      var link_url = document.createElement("a");
+                      link_url.href = link;
+                      link_url.textContent = link;
+                      link_url.style.marginTop = "15px";
+                      links_div.appendChild(link_url);
+                    });
+                    document
+                      .getElementById("origin-content")
+                      .appendChild(links_div);
+                    
+                      prompt_input = document.getElementById("prompt-input");
+                      prompt_input.style.display = "flex";
+                      test_summarize = document.getElementById("test-summarize");
+                      test_summarize.style.display = "flex";
+                  },
+                  error: function (error) {
+                    console.error("Error summarzing articles", error);
+                  }
+                });
+              };
+              document.getElementById("origin-content").appendChild(btn_summarize);
+            }
+            else {
+              ori_content.textContent = "No matching articles."
+            }
+          },
+          error: function (error) {
+            console.error("Error summarzing articles", error);
+          }
+        });
+      }
+
+      function Summarize_links(){                
+        test_content = document.getElementById("test-content");
+        test_content.innerHTML = "";
+        test_content.appendChild(busy);
+
+        test_prompt_input = document.getElementById("prompt-input");
+        console.log(test_prompt_input.value)
+        console.log(test_links)
+        requestData = {
+          prompt: test_prompt_input.value,
+          links: test_links
+        }
+        console.log(requestData);
+        $.ajax({
+          url: "/api/v1/summarize-by-links",
+          type: "POST",
+          contentType: "application/json",
+          data: JSON.stringify(requestData),
+          success: function (response) {
+            summary_result = response["summary"];
+            console.log(summary_result);            
+            test_content.innerHTML = "";
+            test_result = document.createElement("p");
+            test_result.textContent = summary_result;
+            test_content.appendChild(test_result);
+          },
+          error: function (error) {
+            console.error("Error summarzing articles", error);
+          }
+        });
+      }
     </script>
   </body>
 </html>
+      
