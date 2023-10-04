@@ -177,12 +177,12 @@ def load_articles(currency, category, period=0, start_date="1900-01-01 00:00:00"
     articles_gaming = []
     if "Industry News" in category:
         for article in articles_all:
-            if "Gaming" in article[3]:
+            if "Gaming" in article[3] or "game" in article[3]:
                 articles_gaming.append(article)
             else:
                 articles_news.append(article)
     articles = ''
-    if "Gaming" in category:
+    if "Gaming" in category or "game" in category:
         articles = articles_gaming
     elif "Industry News" in category:
         articles = articles_news
