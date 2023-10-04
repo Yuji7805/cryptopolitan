@@ -64,10 +64,10 @@
         left: 50%;
         display: block;
       }
-      .split {
+      /* .split {
         border: dashed;
         border-width: thin;
-      }
+      } */
       #prompt-input {
         height: 300px;
         width: 90%;
@@ -185,7 +185,7 @@
           </button>
         </div>
       </div>
-      <div id="summarized_article"></div>
+      <div id="summarized_article" style="white-space: pre-line;"></div>
     </div>
     <div class="article" id="test-prompt">
       <div class="title">Test Prompt</div>
@@ -274,7 +274,7 @@
         <div class="article_testing" id="prompt_origin">
           <div class="title">
             Origin
-            <div id="origin-content"></div>
+            <div id="origin-content" style="white-space: pre-line; text-align: left;"></div>
           </div>
         </div>
         <div class="article_testing" id="prompt_test">
@@ -286,7 +286,7 @@
                 Summarize (Test Prompt)
               </button>
             </div>
-            <div id="test-content"></div>
+            <div id="test-content" style="white-space: pre-line;"></div>
           </div>
         </div>
       </div>
@@ -599,6 +599,7 @@
             summary_result = response["summary"];
             test_content.innerHTML = "";
             test_result = document.createElement("p");
+            test_result.style.textAlign = "left";
             test_result.textContent = summary_result;
             test_content.appendChild(test_result);
           },
