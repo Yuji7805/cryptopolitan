@@ -24,7 +24,10 @@ def record_article_by_feed(interval):
     sg.init_inserted_times()
     while True:
         try:
-            response = requests.get(URL)
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+            }
+            response = requests.get(URL, headers=headers)
             feed = convert_to_xml(response.text)
             print("article updated", datetime.utcnow())
             items = feed.findall('.//item')
