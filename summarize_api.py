@@ -166,7 +166,7 @@ def load_articles(currency, category, period=0, start_date="1900-01-01 00:00:00"
         if period > 72:
             period = 72
     if period == 0:
-        period = 168
+        period = 72
     start_date = end_date - timedelta(hours=period)
     start_date = start_date.strftime('%Y-%m-%d %H:%M:%S')
     end_date = end_date.strftime(('%Y-%m-%d %H:%M:%S'))
