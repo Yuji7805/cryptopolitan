@@ -6,6 +6,10 @@ import time
 from functools import wraps
 import os
 from dotenv import load_dotenv
+import logging
+
+# Configure the logging module
+logging.basicConfig(filename='log.txt', level=logging.INFO)
 
 load_dotenv()
 
@@ -61,6 +65,7 @@ def summarize_large_text(content, prompt=PROMPT):
     chunks = divide_text(content, MESSAGESIZE)
     summarized_parts = []
     print("large text length: ", len(chunks))
+    logging.info("large text length: ", len(chunks))
     for chunk in chunks:
         summarized_text = summarize_by_gpt35(chunk, prompt)
         summarized_parts.append(summarized_text)
@@ -82,13 +87,17 @@ def summarize_by_gpt35(content, prompt=PROMPT):
             )
             summary = response['choices'][0]['message']['content']
             print("gpt3.5")
+            logging.info("gpt3.5")
             return summary
         except requests.exceptions.ConnectionError as e:
             print("Error: ", e)
             print("Retrying in 5 seconds...")
+            logging.info("Error: ", e)
+            logging.info("Retrying in 5 seconds...")
             time.sleep(5)
         except Exception as e:
             print("Extra Error: ", e)
+            logging.info("Extra Error: ", e)
             return
 
 
@@ -108,20 +117,32 @@ def create_table():
 
 
 def get_publish_dates():
-    connect_db()
-    query = "SELECT publish_date FROM articles"
-    c.execute(query)
-    dates = c.fetchall()
-    close_db_connection()
-    return dates
+    try:
+        connect_db()
+        query = "SELECT publish_date FROM articles"
+        c.execute(query)
+        dates = c.fetchall()
+        close_db_connection()
+        return dates
+    except sqlite3.DatabaseError as e:
+        print("Database Error: in Get_Publish_Date: ", e)
+        logging.info("Database Error: in Get_Publish_Date: ", e)
+        close_db_connection()
 
 
 def init_inserted_times():
-    global inserted_dates
-    dates = get_publish_dates()
-    print(len(dates))
-    for date in dates:
-        inserted_dates[date[0]] = 1
+    try:
+        global inserted_dates
+        dates = get_publish_dates()
+        print(dates)
+        print(len(dates))
+        logging.info(dates)
+        logging.info(len(dates))
+        for date in dates:
+            inserted_dates[date[0]] = 1
+    except sqlite3.DatabaseError as e:
+        print("Database Error:", e)
+        logging.info("Database Error:", e)
 
 
 def registered(publish_date):
@@ -133,17 +154,22 @@ def registered(publish_date):
 
 
 def insert_article(article):
-    global current_inserted_date
-    current_inserted_date = article['publish_date']
-    global inserted_dates
-    init_inserted_times()
-    if not registered(article['publish_date']):
-        connect_db()
-        c.execute("INSERT INTO articles (author, publish_date, category, currency, title, content, summary, link) VALUES (?,?,?,?,?,?,?,?)",
-                  (article["author"], article["publish_date"], article["category"], article["currency"], article["title"], article["content"], article["summary"], article["link"]))
-        conn.commit()
-        inserted_dates[article['publish_date']] = 1
-        close_db_connection()
+    if article['author'] and article['publish_date'] and article['category'] and article['currency'] and article['title'] and article['content'] and article['summary'] and article['link']:
+        try:
+            global current_inserted_date
+            current_inserted_date = article['publish_date']
+            global inserted_dates
+            init_inserted_times()
+            if not registered(article['publish_date']):
+                connect_db()
+                c.execute("INSERT INTO articles (author, publish_date, category, currency, title, content, summary, link) VALUES (?,?,?,?,?,?,?,?)",
+                          (article["author"], article["publish_date"], article["category"], article["currency"], article["title"], article["content"], article["summary"], article["link"]))
+                conn.commit()
+                inserted_dates[article['publish_date']] = 1
+                close_db_connection()
+        except sqlite3.DatabaseError as e:
+            print("Database Error: in Insert_Article: ", e)
+            logging.info("Database Error: in Insert_Article: ", e)
 
 
 def close_db_connection():
@@ -152,3 +178,4 @@ def close_db_connection():
 
 create_table()
 print("table created")
+logging.info("table created")

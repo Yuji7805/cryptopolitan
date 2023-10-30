@@ -10,7 +10,7 @@ PROMPT = os.getenv("PROMPT")
 prompt2 = os.getenv("PROMPT_")
 
 
-def summarize_recent_articles(period, category, currency):
+async def summarize_recent_articles(period, category, currency):
     while True:
         if sa.mutex_load_articles:
             sa.mutex_load_articles = False
@@ -24,7 +24,7 @@ def summarize_recent_articles(period, category, currency):
             if len(articles) == 1:
                 return articles[0][7], ', '.join(links)
             print("#" * 150)
-            summary = sa.summarize_articles(articles, prompt2)
+            summary = await sa.summarize_articles(articles, prompt2)
             links = ', '.join(links)
             return summary, links
         else:
@@ -104,14 +104,14 @@ def insert_article_by_link():
 
 
 @app.route('/api/v1/summarize-articles', methods=['POST', 'OPTIONS'])
-def sum_articles():
+async def sum_articles():
     response = None
     try:
         req_json = request.json
         period = req_json['period']
         category = req_json['category']
         # currency = req_json['currency']
-        summary, links = summarize_recent_articles(
+        summary, links = await summarize_recent_articles(
             int(period), category, "crypto")
         response = make_response(jsonify({"summary": summary, "link": links}))
         response.status_code = 200

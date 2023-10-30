@@ -1,3 +1,6 @@
+import itertools
+import aiohttp
+import asyncio
 import sqlite3
 import openai
 from datetime import datetime, timedelta
@@ -29,6 +32,17 @@ current_inserted_date = ''
 inserted_dates = {}
 
 
+API_KEYS = ["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",
+            "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",
+            "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",
+            "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",
+            "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",
+            "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",
+            "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",
+            "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",
+            "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"]
+
+
 def rate_limited(max_per_second):
     min_interval = 1.0 / float(max_per_second)
 
@@ -53,23 +67,70 @@ def divide_text(text, n):
     return [' '.join(words[i:i+n]) for i in range(0, len(words), n)]
 
 
-@rate_limited(0.03)
-def summarize_large_text(content, prompt=prompt1):
+@rate_limited(1.0)
+async def summarize_large_text(content, prompt=prompt1):
     if len(content.split()) <= MESSAGESIZE:
         return summarize_by_gpt35(content, prompt)
+
     chunks = divide_text(content, MESSAGESIZE)
     summarized_parts = []
     print("large text length: ", len(chunks))
-    for chunk in chunks:
-        summarized_text = summarize_by_gpt35(chunk, prompt)
-        summarized_parts.append(summarized_text)
+    print("doign tasks")
+    tasks = [summarize_by_gpt35_async(chunk, prompt) for chunk in chunks]
+    # Run the tasks concurrently
+    print("merging results")
+    summarized_results = await asyncio.gather(*tasks)
+    # summarized_results = await summarized_results_future
+    for result in summarized_results:
+        summarized_parts.append(result)
+    print("summarizing merged result...")
     summary = ' '.join(summarized_parts)
-    summary = summarize_by_gpt35(summary, prompt)
+    summary = await summarize_large_text(summary, prompt)
+    print("last summarizing finished")
     return summary
 
 
-def summarize_by_gpt35(content, prompt=prompt1):
+async def summarize_by_gpt35_async(content, prompt=prompt1):
     print(prompt)
+    instructions_to_the_model = f"{prompt}\n\n{content}"
+    async with aiohttp.ClientSession() as session:
+        while True:
+            try:
+                api_key = get_next_api_key()  # Obtain the next API key from the available keys
+                print(api_key)
+                response = await session.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    json={
+                        "model": "gpt-3.5-turbo",
+                        "messages": [
+                            {"role": "system", "content": "You are a helpful assistant."},
+                            {"role": "user", "content": instructions_to_the_model},
+                        ]
+                    },
+                )
+
+                data = await response.json()
+                summary = data['choices'][0]['message']['content']
+                print("gpt3.5 async", len(summary))
+                return summary
+            except aiohttp.ClientConnectionError as e:
+                print("Error: ", e)
+                print("Retrying in 5 seconds...")
+                await asyncio.sleep(5)
+            except Exception as e:
+                print("Extra Error: ", e)
+                return
+
+api_key_generator = itertools.cycle(API_KEYS)
+
+
+def get_next_api_key():
+    return next(api_key_generator)
+
+
+def summarize_by_gpt35(content, prompt=prompt1):
+    # print(prompt, content)
     instructions_to_the_model = f"{prompt}\n\n{content}"
     while True:
         try:
@@ -81,7 +142,7 @@ def summarize_by_gpt35(content, prompt=prompt1):
                 ]
             )
             summary = response['choices'][0]['message']['content']
-            print("gpt3.5")
+            print("gpt3.5 sync")
             return summary
         except requests.exceptions.ConnectionError as e:
             print("Error: ", e)
@@ -117,24 +178,18 @@ def registered(publish_date):
         return False
 
 
-def insert_article(article):
-    global current_inserted_date
-    current_inserted_date = article['publish_date']
-    global inserted_dates
-    init_inserted_times()
-    if not registered(article['publish_date']):
-        connect_db()
-        c.execute("INSERT INTO articles (author, publish_date, category, currency, title, content, summary, link) VALUES (?,?,?,?,?,?,?)",
-                  (article["author"], article["publish_date"], article["category"], article["currency"], article["title"], article["content"], article["summary"], article["link"]))
-        conn.commit()
-        inserted_dates[article['publish_date']] = 1
-        close_db_connection()
-
-
 def load_all_categories():
     cat_dic = {}
     connect_db()
-    query = f"SELECT category FROM articles"
+    end_date = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    end_date = datetime.strptime((end_date), '%Y-%m-%d %H:%M:%S')
+
+    start_date = end_date - timedelta(hours=72)
+    start_date = start_date.strftime('%Y-%m-%d %H:%M:%S')
+    end_date = end_date.strftime(('%Y-%m-%d %H:%M:%S'))
+    print(start_date, end_date)
+
+    query = f"SELECT category FROM articles WHERE publish_date BETWEEN '{start_date}' AND '{end_date}'"
     c.execute(query)
     categories = c.fetchall()
     for each in categories:
@@ -182,7 +237,9 @@ def load_articles(currency, category, period=0, start_date="1900-01-01 00:00:00"
             else:
                 articles_news.append(article)
     articles = ''
-    if "Gaming" in category or "game" in category:
+    if "Blockchain Gaming" in category or "Gaming Hardware" in category:
+        articles = articles_all
+    elif "Gaming" in category or "game" in category:
         articles = articles_gaming
     elif "Industry News" in category:
         articles = articles_news
@@ -193,31 +250,13 @@ def load_articles(currency, category, period=0, start_date="1900-01-01 00:00:00"
     return articles
 
 
-# def load_article_links(currency, category, period=0, start_date="1900-01-01 00:00:00", end_date="5000-12-12 23:59:59"):
-#     global mutex_load_articles
-#     mutex_load_articles = False
-#     connect_db()
-#     end_date = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-#     end_date = datetime.strptime((end_date), '%Y-%m-%d %H:%M:%S')
-#     print(end_date)
-#     if period == 0:
-#         period = 168
-#     start_date = end_date - timedelta(hours=period)
-#     start_date = start_date.strftime('%Y-%m-%d %H:%M:%S')
-#     end_date = end_date.strftime(('%Y-%m-%d %H:%M:%S'))
-#     query = f"SELECT link FROM articles WHERE category LIKE '%{category}%' AND publish_date BETWEEN '{start_date}' AND '{end_date}'"
-#     c.execute(query)
-#     links = c.fetchall()
-#     close_db_connection()
-#     mutex_load_articles = True
-#     return links
-
-
-def summarize_articles(articles, prompt):
+async def summarize_articles(articles, prompt):
     contents = ''
     for article in articles:
         contents += article[2] + "\n" + article[7]
-    return summarize_large_text(contents, prompt)
+    # asyncio.set_event_loop_policy(
+    #     asyncio.WindowsSelectorEventLoopPolicy())  # Only required on Windows
+    return await summarize_large_text(contents, prompt)
 
 
 def get_content_by_link(link):
@@ -235,6 +274,7 @@ def get_summary_by_link(link):
     close_db_connection()
     return summary
 
+
 def get_time_by_link(link):
     connect_db()
     c.execute("SELECT publish_date FROM articles WHERE link=?", (link,))
@@ -245,3 +285,11 @@ def get_time_by_link(link):
 
 def close_db_connection():
     conn.close()
+
+
+# delete record that has blank field
+# connect_db()
+# query = "DELETE FROM articles WHERE author IS NULL OR publish_date IS NULL OR category IS NULL OR currency IS NULL OR title IS NULL OR content IS NULL OR summary IS NULL OR link IS NULL"
+# c.execute(query)
+# conn.commit()
+# close_db_connection()

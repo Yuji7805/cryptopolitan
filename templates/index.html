@@ -536,6 +536,7 @@
                   type: "POST",
                   contentType: "application/json",
                   data: JSON.stringify(requestData),
+                  async: true,
                   success: function (response) {
                     document.getElementById("origin-content").textContent =
                       response["summary"];
